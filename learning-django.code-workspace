@@ -1,0 +1,18 @@
+{
+  "folders": [
+    {
+      "path": ".",
+      "name": "learning-django (Git Root)"
+    },
+    {
+      "path": "learning/05_DRF_practice_apiview_tweet",
+      "name": "tweet_project"
+    }
+  ],
+  "settings": {
+    "python.defaultInterpreterPath": "${workspaceFolder:tweet_project}/.venv/bin/python",
+    "mypy-type-checker.args": [
+      "--config-file=${workspaceFolder:tweet_project}/mypy.ini"
+    ]
+  }
+}

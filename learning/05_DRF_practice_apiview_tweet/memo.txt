@@ -1,22 +1,20 @@
-import logging
-
-from rest_framework import permissions, status
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.permissions import AllowAny
 from rest_framework.authtoken.models import Token
 from rest_framework.request import Request
-from rest_framework.response import Response
-from rest_framework.views import APIView
-
-from .serializers import UserLoginSerializer, UserRegisterSerializer
+from .serializers import UserRegisterSerializer, LoginSerializer
 from .types import LoginResponseData
+import logging
 
 logger = logging.getLogger(__name__)
 
 
 class UserRegisterView(APIView):
-    serializer_class = UserRegisterSerializer
-    permission_classes = [
-        permissions.AllowAny,
-    ]
+    """ユーザー登録API"""
+
+    permission_classes = [AllowAny]
 
     def post(self, request: Request) -> Response:
         """
@@ -32,9 +30,9 @@ class UserRegisterView(APIView):
             201: 登録成功
             400: バリデーションエラー
         """
-        serializer = self.serializer_class(data=request.data)
+        serializer = UserRegisterSerializer(data=request.data)
 
-        if serializer.is_valid(raise_exception=True):
+        if serializer.is_valid():
             user = serializer.save()
             logger.info(f"New user registered: {user.username}")
 
@@ -44,24 +42,26 @@ class UserRegisterView(APIView):
                     "user": {
                         "id": user.id,
                         "username": user.username,
-                        "email": user.email,
-                    },
+                        "email": user.email
+                    }
                 },
-                status=status.HTTP_201_CREATED,
+                status=status.HTTP_201_CREATED
             )
 
         logger.warning(f"User registration failed: {serializer.errors}")
         return Response(
-            {"message": "入力内容に誤りがあります。", "errors": serializer.errors},
-            status=status.HTTP_400_BAD_REQUEST,
+            {
+                "message": "入力内容に誤りがあります。",
+                "errors": serializer.errors
+            },
+            status=status.HTTP_400_BAD_REQUEST
         )
 
 
-class UserLoginView(APIView):
+class LoginView(APIView):
     """ログインAPI（Token認証）"""
 
-    serializer_class = UserLoginSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [AllowAny]
 
     def post(self, request: Request) -> Response:
         """
@@ -75,24 +75,24 @@ class UserLoginView(APIView):
             200: ログイン成功、トークン返却
             400: バリデーションエラー
         """
-        serializer = UserLoginSerializer(data=request.data)
+        serializer = LoginSerializer(data=request.data)
 
         if serializer.is_valid():
-            user = serializer.validated_data["user"]
+            user = serializer.validated_data['user']
 
-            # トークン取得 or 作成
+            # トークン取得または作成
             token, created = Token.objects.get_or_create(user=user)
 
             logger.info(f"User logged in: {user.username}")
 
             # 型安全なレスポンス
             response_data: LoginResponseData = {
-                "token": token,
-                "user": {
-                    "id": user.id,
-                    "email": user.email,
-                    "username": user.username,
-                },
+                'token': token.key,
+                'user': {
+                    'id': user.id,
+                    'username': user.username,
+                    'email': user.email
+                }
             }
 
             return Response(response_data, status=status.HTTP_200_OK)
@@ -100,8 +100,8 @@ class UserLoginView(APIView):
         logger.warning(f"Login failed: {serializer.errors}")
         return Response(
             {
-                "message": "ログインに失敗しました",
-                "errors": serializer.errors,
+                "message": "ログインに失敗しました。",
+                "errors": serializer.errors
             },
-            status=status.HTTP_400_BAD_REQUEST,
+            status=status.HTTP_400_BAD_REQUEST
         )
